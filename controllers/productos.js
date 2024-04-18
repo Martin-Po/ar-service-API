@@ -11,6 +11,25 @@ const middleware = require('../utils/middleware')
 
 productosRouter.get('/', async (request, response) => {
     const productos = await Producto.find({})
+    .populate('moneda')
+    .populate({
+        path: 'caracteristicas',
+        select: 'caracteristica valor', // Especifica los campos que deseas
+        populate: {
+          path: 'caracteristica',
+          select: 'name _id', // Selecciona solo los campos 'name' y '_id' de 'CARACTERISTICA'
+        },
+      })
+    .populate({
+        path: 'tipos',
+        select: 'name _id', 
+      })
+      .populate({
+        path: 'subtipos',
+        select: 'name _id', 
+      })
+
+    
     response.json(productos)
 })
 
@@ -455,7 +474,15 @@ productosRouter.put('/:id/add-observacion', async (request, response, next) => {
                 .json({ error: 'Observacion must be provided' })
         }
 
-        producto.observaciones.push(body.observacion)
+        const observacion = {
+            observacion: body.observacion,
+            fecha: Date.now()
+        }
+
+
+    
+            producto.observaciones.push(observacion)
+
 
         const updatedProducto = await Producto.findByIdAndUpdate(
             request.params.id,

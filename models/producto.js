@@ -6,9 +6,9 @@ const productoSchema = mongoose.Schema({
         type: String,
         required: true,
     },
-    descripcion:  {
+    descripcion: {
         type: String,
-        default: null
+        default: null,
     },
     combo: [
         {
@@ -38,7 +38,7 @@ const productoSchema = mongoose.Schema({
     caracteristicas: [
         {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Caracteristicasxproducto',
+            ref: 'Caracteristicaxproducto',
             defautl: null,
         },
     ],
@@ -72,11 +72,12 @@ const productoSchema = mongoose.Schema({
             default: Date.now,
         },
     },
-    log_estados: [{
-        estado: String,
-        fecha: Date        
-    }
-],
+    log_estados: [
+        {
+            estado: String,
+            fecha: Date,
+        },
+    ],
     portada: {
         type: String,
         required: true,
@@ -87,14 +88,16 @@ const productoSchema = mongoose.Schema({
             required: true,
         },
     ],
-    observaciones: {
-        observacion: {
-            type: String,
-        },  
-        fecha: {
-            type: Date,
+    observaciones: [
+        {
+            observacion: {
+                type: String,
+            },
+            fecha: {
+                type: Date,
+            },
         },
-    },
+    ],
 })
 
 productoSchema.plugin(uniqueValidator)
