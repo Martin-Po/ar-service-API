@@ -50,7 +50,7 @@ loginRouter.post(
     '/checkuser',
     middleware.userExtractor,
     async (request, response, next) => {
-        response.status(200)
+        response.status(200).end()
     }
 )
 
