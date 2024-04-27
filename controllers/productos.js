@@ -3,6 +3,7 @@ const productosRouter = require('express').Router()
 const Producto = require('../models/producto')
 const Moneda = require('../models/moneda')
 const Tipo = require('../models/tipo')
+const Subtipo = require('../models/subtipo')
 const Combo = require('../models/combo')
 const CaracteristicaXproducto = require('../models/caracteristicaXproducto')
 
@@ -32,6 +33,51 @@ productosRouter.get('/', async (request, response) => {
     
     response.json(productos)
 })
+
+productosRouter.get('/marcas', async (request, response) => {
+    try {
+        const marcas = await Producto.distinct('marca');
+        response.json(marcas);
+    } catch (error) {
+        response.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+productosRouter.get('/origenes', async (request, response) => {
+    try {
+        const origenes = await Producto.distinct('origen');
+        response.json(origenes);
+    } catch (error) {
+        response.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+productosRouter.get('/monedas', async (request, response) => {
+    try {
+        const monedas = await Moneda.find({});
+        response.json(monedas);
+    } catch (error) {
+        response.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+productosRouter.get('/tipos', async (request, response) => {
+    try {
+        const tipos = await Tipo.find({});
+        response.json(tipos);
+    } catch (error) {
+        response.status(500).json({ error: 'Internal server error' });
+    }
+});
+ 
+productosRouter.get('/subtipos', async (request, response) => {
+    try {
+        const subtipos = await Subtipo.find({});
+        response.json(subtipos);
+    } catch (error) {
+        response.status(500).json({ error: 'Internal server error' });
+    }
+});
 
 productosRouter.post(
     '/',

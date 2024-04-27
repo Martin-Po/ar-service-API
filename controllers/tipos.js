@@ -6,7 +6,10 @@ const Subtipo = require('../models/subtipo')
 const middleware = require('../utils/middleware')
 
 tiposRouter.get('/', async (request, response) => {
-    const tipo = await Tipo.find({})
+    const tipo = await Tipo.find({}).populate({
+        path: 'subtipos',
+        select: 'name _id', 
+      })
     response.json(tipo)
 })
 
