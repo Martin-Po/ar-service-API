@@ -7,6 +7,16 @@ const Subtipo = require('../models/subtipo')
 const Combo = require('../models/combo')
 const CaracteristicaXproducto = require('../models/caracteristicaXproducto')
 
+const admin = require('firebase-admin')
+const serviceAccount = require('../firebaseServiceAccount');
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  storageBucket: 'ar-service-f8abf.appspot.com' // Cambia esto al nombre de tu bucket
+});
+
+const bucket = admin.storage().bucket(); 
+
 
 const middleware = require('../utils/middleware')
 
@@ -138,11 +148,11 @@ productosRouter.post(
             })
         }
 
-        if (!body.imagenes) {
-            return response.status(400).json({
-                error: 'imagenes missing',
-            })
-        }
+        // if (!body.imagenes) {
+        //     return response.status(400).json({
+        //         error: 'imagenes missing',
+        //     })
+        // }
 
         if (body.moneda) {
             const moneda = await Moneda.findById(body.moneda)
@@ -182,17 +192,16 @@ productosRouter.post(
             moneda: body.moneda,
             marca: body.marca,
             modelo: body.modelo,
-            portada: body.portada,
-            imagenes: body.imagenes,
+            portada: 'https://firebasestorage.googleapis.com/v0/b/ar-service-f8abf.appspot.com/o/no-photo.jpg?alt=media&token=770977fc-e1c7-4802-8915-db2daca9afc2',
+            imagenes: 'https://firebasestorage.googleapis.com/v0/b/ar-service-f8abf.appspot.com/o/no-photo.jpg?alt=media&token=770977fc-e1c7-4802-8915-db2daca9afc2',
         })
 
-
         if (body.subtipos) {
-            for (const elemento of body.tipos) {
-                const tipo = await Tipo.findById(elemento._id)
-                if (!tipo) {
+            for (const elemento of body.subtipos) {
+                const subtipo = await Subtipo.findById(elemento)
+                if (!subtipo) {
                     return response.status(404).json({
-                        error: 'Subtipo ' + elemento._id + ' not found',
+                        error: 'Subtipo ' + elemento + ' not found',
                     })
                 }
             }
@@ -207,7 +216,9 @@ productosRouter.post(
             }
             // Agregar el nuevo objeto de observación al array de observaciones
             producto.observaciones.push(nuevaObservacion)
-        }
+        }      
+
+
 
         console.log(producto);
         try {

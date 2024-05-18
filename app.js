@@ -13,16 +13,9 @@ const productosRouter = require('./controllers/productos')
 const tiposRouter = require('./controllers/tipos')
 const subtiposRouter = require('./controllers/subtipos')
 
-
-
-
-
-
-
-
-
 const logger = require('./utils/logger')
 const middleware = require('./utils/middleware')
+
 
 
 const mongoose = require('mongoose')

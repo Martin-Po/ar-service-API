@@ -5,6 +5,8 @@
 /.pnp
 .pnp.js
 
+ar-service-f8abf-firebase-adminsdk-le5ri-33a17c5dcf.json
+
 # testing
 /coverage
 
@@ -17,6 +19,7 @@
 .env.development.local
 .env.test.local
 .env.production.local
+ar-service-f8abf-firebase-adminsdk-le5ri-33a17c5dcf.json
 
 npm-debug.log*
 yarn-debug.log*
