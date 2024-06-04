@@ -7,7 +7,7 @@ const Producto = require('../models/producto')
 const middleware = require('../utils/middleware')
 
 caracteristicaXproductoRouter.get('/', async (request, response) => {
-    const caracteristicaXproducto = await CaracteristicaXproducto.find({})
+    const caracteristicaXproducto = await CaracteristicaXproducto.find({}).populate('caracteristica')
     response.json(caracteristicaXproducto)
 })
 
@@ -22,55 +22,63 @@ caracteristicaXproductoRouter.post(
                     error: 'caracteristica missing',
                 })
             }
-            if (!body.producto) {
+            if (!body.producto_id) {
                 return response.status(400).json({
                     error: 'producto missing',
                 })
             }
 
-            if (!body.valor) {
-                return response.status(400).json({
-                    error: 'valor missing',
-                })
-            }
-
-            const producto = await Producto.findById(body.producto)
-            const caracteristica = await Caracteristica.findById(
-                body.caracteristica
-            )
-
+            const producto = await Producto.findById(body.producto_id)
             if (!producto) {
                 return response.status(400).json({
                     error: 'Producto deoes not  exist',
                 })
             }
 
-            if (!caracteristica) {
-                return response.status(400).json({
-                    error: 'Caracteristica deoes not  exist',
-                })
+            const savedCaracteristicas = [];
+
+            for (const newCaracteristica of body.caracteristica) {
+                console.log('vuelta');
+                if (!newCaracteristica.valor) {
+                    return response.status(400).json({
+                        error: 'Valor missing',
+                    });
+                }
+    
+                const caracteristica = await Caracteristica.findById(newCaracteristica.id);
+    
+                if (!caracteristica) {
+                    return response.status(400).json({
+                        error: 'Caracteristica does not exist',
+                    });
+                }
+    
+                const caracteristicaXproducto = new CaracteristicaXproducto({
+                    caracteristica: caracteristica._id,
+                    producto: producto._id,
+                    valor: newCaracteristica.valor,
+                });
+    
+                try {
+                    const savedCaracteristicaXproducto = await caracteristicaXproducto.save();
+                    savedCaracteristicas.push(savedCaracteristicaXproducto);
+    
+                    await Producto.findByIdAndUpdate(producto._id, {
+                        $push: {
+                            caracteristicas: savedCaracteristicaXproducto._id,
+                        },  
+                    });
+                } catch (exception) {
+                    next(exception);
+                    return;
+                }
             }
 
-            const caracteristicaXproducto = new CaracteristicaXproducto({
-                caracteristica: caracteristica._id,
-                producto: producto._id,
-                valor: body.valor,
-            })
+            response.status(201).json(savedCaracteristicas);
+    
 
-            try {
-                const savedCaracteristicaXproducto =
-                    await caracteristicaXproducto.save()
-                response.status(201).json(savedCaracteristicaXproducto)
-
-                await Producto.findByIdAndUpdate(producto._id, {
-                    $push: {
-                        caracteristicas: savedCaracteristicaXproducto._id,
-                    },
-                })
-            } catch (exception) {
-                next(exception)
-            }
         } catch (exception) {
+            console.log('dioerro 2');
             next(exception)
         }
     }

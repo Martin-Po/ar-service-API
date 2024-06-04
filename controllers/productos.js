@@ -19,18 +19,18 @@ const bucket = admin.storage().bucket();
 
 
 const middleware = require('../utils/middleware')
+const Caracteristica = require('../models/caracteristica')
 
 productosRouter.get('/', async (request, response) => {
     const productos = await Producto.find({})
     .populate('moneda')
     .populate({
         path: 'caracteristicas',
-        select: 'caracteristica valor', // Especifica los campos que deseas
         populate: {
-          path: 'caracteristica',
-          select: 'name _id', // Selecciona solo los campos 'name' y '_id' de 'CARACTERISTICA'
-        },
-      })
+            path: 'caracteristica',
+            model: 'Caracteristica',
+        }
+    }).lean()   
     .populate({
         path: 'tipos',
         select: 'name _id', 
@@ -43,6 +43,8 @@ productosRouter.get('/', async (request, response) => {
     
     response.json(productos)
 })
+
+
 
 productosRouter.get('/marcas', async (request, response) => {
     try {
@@ -86,6 +88,42 @@ productosRouter.get('/subtipos', async (request, response) => {
         response.json(subtipos);
     } catch (error) {
         response.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+productosRouter.get('/caracteristicas', async (request, response) => {
+    try {
+        const caracteristicas = await Caracteristica.find({});
+        response.json(caracteristicas);
+    } catch (error) {
+        response.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+productosRouter.get('/:id', async (request, response, next) => {
+    const { id } = request.params;
+
+    try {
+        const producto = await Producto.findById(id).populate('caracteristicas');
+        if (!producto) {
+            return response.status(404).json({
+                error: 'Producto not found',
+            });
+        }
+
+        // Check each characteristic to identify the problematic one
+        for (const caracXProd of producto.caracteristicas) {
+            try {
+               const prueba =  await Caracteristica.findById(caracXProd.caracteristica);
+                console.log(prueba);
+            } catch (exception) {
+                console.error(`Error populating caracteristica ${caracXProd.caracteristica}:`, exception);
+            }
+        }
+
+        response.json(producto);
+    } catch (exception) {
+        next(exception);
     }
 });
 
@@ -585,7 +623,7 @@ productosRouter.put('/:id/change-state', async (request, response, next) => {
                     .status(400)
                     .json({ error: 'El producto se encuentra en un combo' })
             }
-        }
+        }   
 
         producto.log_estados.push({
             estado: body.estado_activo.estado,
