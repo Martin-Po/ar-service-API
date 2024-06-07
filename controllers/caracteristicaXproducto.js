@@ -60,8 +60,9 @@ caracteristicaXproductoRouter.post(
                 });
     
                 try {
-                    const savedCaracteristicaXproducto = await caracteristicaXproducto.save();
-                    savedCaracteristicas.push(savedCaracteristicaXproducto);
+                    const savedCaracteristicaXproducto = await caracteristicaXproducto.save()
+                    const populatedCaracteristicaXproducto = await CaracteristicaXproducto.findById(savedCaracteristicaXproducto._id).populate('caracteristica');
+                    savedCaracteristicas.push(populatedCaracteristicaXproducto);
     
                     await Producto.findByIdAndUpdate(producto._id, {
                         $push: {
