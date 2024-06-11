@@ -6,6 +6,10 @@ const Tipo = require('../models/tipo')
 const Subtipo = require('../models/subtipo')
 const Combo = require('../models/combo')
 const CaracteristicaXproducto = require('../models/caracteristicaXproducto')
+const multer = require('multer');
+const formidable = require('formidable');
+
+
 
 const admin = require('firebase-admin')
 const serviceAccount = require('../firebaseServiceAccount');
@@ -17,6 +21,12 @@ admin.initializeApp({
 
 const bucket = admin.storage().bucket(); 
 
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: 5 * 1024 * 1024 // limita el tamaño del archivo a 5MB
+    }
+  });
 
 const middleware = require('../utils/middleware')
 const Caracteristica = require('../models/caracteristica')
@@ -219,7 +229,6 @@ productosRouter.post(
         }
 
 // Ahora puedes asignar tiposObjectIdArray al campo tipos en tu documento de Mongoose
-
 
 
         const producto = new Producto({
@@ -494,65 +503,55 @@ productosRouter.put('/:id/add-subtipo', async (request, response, next) => {
     }
 })
 
-productosRouter.put('/:id/add-image', async (request, response, next) => {
+productosRouter.put('/:id/add-image', upload.single('portada'), async (request, response, next) => {
     const body = request.body
     try {
-        const producto = await Producto.findById(request.params.id)
-
-        if (!producto) {
-            return response.status(404).json({ error: 'Producto not found' })
-        }
-
-        if (!body.imagen) {
-            return response
-                .status(409)
-                .json({ error: 'Imagen must be provided' })
-        }
-
-        const tiposDelProducto = await Tipo.find({
-            _id: { $in: producto.tipos },
-        })
-
-        producto.imagenes.push(body.imagen)
-
-        const updatedProducto = await Producto.findByIdAndUpdate(
-            request.params.id,
-            producto,
-            { new: true }
-        )
-        return response.json(updatedProducto)
+       
+        return response.status(200)
     } catch (exception) {
+        console.log('algo dio error');
         next(exception)
     }
 })
 
-productosRouter.put('/:id/change-portada', async (request, response, next) => {
-    const body = request.body
-    try {
-        const producto = await Producto.findById(request.params.id)
-
-        if (!producto) {
-            return response.status(404).json({ error: 'Producto not found' })
-        }
-
-        if (!body.portada) {
-            return response
-                .status(409)
-                .json({ error: 'Portada must be provided' })
-        }
-
-        producto.portada = body.portada
-
-        const updatedProducto = await Producto.findByIdAndUpdate(
-            request.params.id,
-            producto,
-            { new: true }
-        )
-        return response.json(updatedProducto)
-    } catch (exception) {
-        next(exception)
-    }
-})
+productosRouter.put('/:id/change-portada', (request, response, next) => {
+    const form = new formidable.IncomingForm();
+    form.parse(request, async (err, fields, files) => {
+        console.log('fields: ', fields);
+        console.log('files: ', files);
+      if (err) {
+        return next(err);
+      }
+  
+      const { id } = request.params;
+  
+      if (!files.portada) {
+        return response.status(400).json({ error: 'No file uploaded' });
+      }
+  
+      const file = files.portada;
+      const filePath = file[0].filepath; // Path temporal donde formidable guarda el archivo
+      const fileName = `${Date.now()}_${file[0].originalFilename}`;
+      const blob = bucket.file(`images/${fileName}`);
+  
+      try {
+        await bucket.upload(filePath, {
+          destination: blob.name,
+          metadata: {
+            contentType: file[0].mimetype
+          }
+        });
+  
+        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
+        // Aquí podrías guardar la URL en tu base de datos si lo necesitas
+        // const producto = await Producto.findByIdAndUpdate(id, { portada: publicUrl });
+        // await producto.save();
+        response.status(200).json({ url: publicUrl });
+      } catch (error) {
+        next(error);
+      }
+    });
+  });
 
 productosRouter.put('/:id/add-observacion', async (request, response, next) => {
     const body = request.body
