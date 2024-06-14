@@ -6,136 +6,137 @@ const Tipo = require('../models/tipo')
 const Subtipo = require('../models/subtipo')
 const Combo = require('../models/combo')
 const CaracteristicaXproducto = require('../models/caracteristicaXproducto')
-const multer = require('multer');
-const formidable = require('formidable');
-
-
+const multer = require('multer')
+const formidable = require('formidable')
 
 const admin = require('firebase-admin')
-const serviceAccount = require('../firebaseServiceAccount');
+const serviceAccount = require('../firebaseServiceAccount')
 
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  storageBucket: 'ar-service-f8abf.appspot.com' // Cambia esto al nombre de tu bucket
-});
+    credential: admin.credential.cert(serviceAccount),
+    storageBucket: 'ar-service-f8abf.appspot.com', // Cambia esto al nombre de tu bucket
+})
 
-const bucket = admin.storage().bucket(); 
+const bucket = admin.storage().bucket()
 
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-      fileSize: 5 * 1024 * 1024 // limita el tamaño del archivo a 5MB
-    }
-  });
+        fileSize: 5 * 1024 * 1024, // limita el tamaño del archivo a 5MB
+    },
+})
 
 const middleware = require('../utils/middleware')
 const Caracteristica = require('../models/caracteristica')
 
 productosRouter.get('/', async (request, response) => {
     const productos = await Producto.find({})
-    .populate('moneda')
-    .populate({
-        path: 'caracteristicas',
-        populate: {
-            path: 'caracteristica',
-            model: 'Caracteristica',
-        }
-    }).lean()   
-    .populate({
-        path: 'tipos',
-        select: 'name _id', 
-      })
-      .populate({
-        path: 'subtipos',
-        select: 'name _id', 
-      })
+        .populate('moneda')
+        .populate({
+            path: 'caracteristicas',
+            populate: {
+                path: 'caracteristica',
+                model: 'Caracteristica',
+            },
+        })
+        .lean()
+        .populate({
+            path: 'tipos',
+            select: 'name _id',
+        })
+        .populate({
+            path: 'subtipos',
+            select: 'name _id',
+        })
 
-    
     response.json(productos)
 })
 
-
-
 productosRouter.get('/marcas', async (request, response) => {
     try {
-        const marcas = await Producto.distinct('marca');
-        response.json(marcas);
+        const marcas = await Producto.distinct('marca')
+        response.json(marcas)
     } catch (error) {
-        response.status(500).json({ error: 'Internal server error' });
+        response.status(500).json({ error: 'Internal server error' })
     }
-});
+})
 
 productosRouter.get('/origenes', async (request, response) => {
     try {
-        const origenes = await Producto.distinct('origen');
-        response.json(origenes);
+        const origenes = await Producto.distinct('origen')
+        response.json(origenes)
     } catch (error) {
-        response.status(500).json({ error: 'Internal server error' });
+        response.status(500).json({ error: 'Internal server error' })
     }
-});
+})
 
 productosRouter.get('/monedas', async (request, response) => {
     try {
-        const monedas = await Moneda.find({});
-        response.json(monedas);
+        const monedas = await Moneda.find({})
+        response.json(monedas)
     } catch (error) {
-        response.status(500).json({ error: 'Internal server error' });
+        response.status(500).json({ error: 'Internal server error' })
     }
-});
+})
 
 productosRouter.get('/tipos', async (request, response) => {
     try {
-        const tipos = await Tipo.find({});
-        response.json(tipos);
+        const tipos = await Tipo.find({})
+        response.json(tipos)
     } catch (error) {
-        response.status(500).json({ error: 'Internal server error' });
+        response.status(500).json({ error: 'Internal server error' })
     }
-});
- 
+})
+
 productosRouter.get('/subtipos', async (request, response) => {
     try {
-        const subtipos = await Subtipo.find({});
-        response.json(subtipos);
+        const subtipos = await Subtipo.find({})
+        response.json(subtipos)
     } catch (error) {
-        response.status(500).json({ error: 'Internal server error' });
+        response.status(500).json({ error: 'Internal server error' })
     }
-});
+})
 
 productosRouter.get('/caracteristicas', async (request, response) => {
     try {
-        const caracteristicas = await Caracteristica.find({});
-        response.json(caracteristicas);
+        const caracteristicas = await Caracteristica.find({})
+        response.json(caracteristicas)
     } catch (error) {
-        response.status(500).json({ error: 'Internal server error' });
+        response.status(500).json({ error: 'Internal server error' })
     }
-});
+})
 
 productosRouter.get('/:id', async (request, response, next) => {
-    const { id } = request.params;
+    const { id } = request.params
 
     try {
-        const producto = await Producto.findById(id).populate('caracteristicas');
+        const producto = await Producto.findById(id).populate('caracteristicas')
         if (!producto) {
             return response.status(404).json({
                 error: 'Producto not found',
-            });
+            })
         }
 
         // Check each characteristic to identify the problematic one
         for (const caracXProd of producto.caracteristicas) {
             try {
-               const prueba =  await Caracteristica.findById(caracXProd.caracteristica);
-                console.log(prueba);
+                const prueba = await Caracteristica.findById(
+                    caracXProd.caracteristica
+                )
+                console.log(prueba)
             } catch (exception) {
-                console.error(`Error populating caracteristica ${caracXProd.caracteristica}:`, exception);
+                console.error(
+                    `Error populating caracteristica ${caracXProd.caracteristica}:`,
+                    exception
+                )
             }
         }
 
-        response.json(producto);
+        response.json(producto)
     } catch (exception) {
-        next(exception);
+        next(exception)
     }
-});
+})
 
 productosRouter.post(
     '/',
@@ -214,9 +215,7 @@ productosRouter.post(
                 error: 'Valor no puede ser 0 o menor',
             })
         }
-        console.log(body.tipos);
-
-        
+        console.log(body.tipos)
 
         for (const elemento of body.tipos) {
             const tipo = await Tipo.findById(elemento)
@@ -224,12 +223,10 @@ productosRouter.post(
                 return response
                     .status(404)
                     .json({ error: 'Tipo ' + elemento + ' not found' })
-            }          
-
+            }
         }
 
-// Ahora puedes asignar tiposObjectIdArray al campo tipos en tu documento de Mongoose
-
+        // Ahora puedes asignar tiposObjectIdArray al campo tipos en tu documento de Mongoose
 
         const producto = new Producto({
             name: body.name,
@@ -239,8 +236,10 @@ productosRouter.post(
             moneda: body.moneda,
             marca: body.marca,
             modelo: body.modelo,
-            portada: 'https://firebasestorage.googleapis.com/v0/b/ar-service-f8abf.appspot.com/o/no-photo.jpg?alt=media&token=770977fc-e1c7-4802-8915-db2daca9afc2',
-            imagenes: 'https://firebasestorage.googleapis.com/v0/b/ar-service-f8abf.appspot.com/o/no-photo.jpg?alt=media&token=770977fc-e1c7-4802-8915-db2daca9afc2',
+            portada:
+                'https://firebasestorage.googleapis.com/v0/b/ar-service-f8abf.appspot.com/o/no-photo.jpg?alt=media&token=770977fc-e1c7-4802-8915-db2daca9afc2',
+            imagenes:
+                'https://firebasestorage.googleapis.com/v0/b/ar-service-f8abf.appspot.com/o/no-photo.jpg?alt=media&token=770977fc-e1c7-4802-8915-db2daca9afc2',
         })
 
         if (body.subtipos) {
@@ -263,11 +262,9 @@ productosRouter.post(
             }
             // Agregar el nuevo objeto de observación al array de observaciones
             producto.observaciones.push(nuevaObservacion)
-        }      
+        }
 
-
-
-        console.log(producto);
+        console.log(producto)
         try {
             const savedProducto = await producto.save()
             await savedProducto.populate({
@@ -503,55 +500,138 @@ productosRouter.put('/:id/add-subtipo', async (request, response, next) => {
     }
 })
 
-productosRouter.put('/:id/add-image', upload.single('portada'), async (request, response, next) => {
-    const body = request.body
-    try {
-       
-        return response.status(200)
-    } catch (exception) {
-        console.log('algo dio error');
-        next(exception)
+productosRouter.put(
+    '/:id/add-image',
+    upload.single('portada'),
+    async (request, response, next) => {
+        const body = request.body
+        try {
+            return response.status(200)
+        } catch (exception) {
+            console.log('algo dio error')
+            next(exception)
+        }
     }
-})
+)
 
 productosRouter.put('/:id/change-portada', (request, response, next) => {
-    const form = new formidable.IncomingForm();
+    const form = new formidable.IncomingForm()
     form.parse(request, async (err, fields, files) => {
-        console.log('fields: ', fields);
-        console.log('files: ', files);
-      if (err) {
-        return next(err);
-      }
-  
-      const { id } = request.params;
-  
-      if (!files.portada) {
-        return response.status(400).json({ error: 'No file uploaded' });
-      }
-  
-      const file = files.portada;
-      const filePath = file[0].filepath; // Path temporal donde formidable guarda el archivo
-      const fileName = `${Date.now()}_${file[0].originalFilename}`;
-      const blob = bucket.file(`images/${fileName}`);
-  
-      try {
-        await bucket.upload(filePath, {
-          destination: blob.name,
-          metadata: {
-            contentType: file[0].mimetype
-          }
-        });
-  
-        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
-        // Aquí podrías guardar la URL en tu base de datos si lo necesitas
-        // const producto = await Producto.findByIdAndUpdate(id, { portada: publicUrl });
-        // await producto.save();
-        response.status(200).json({ url: publicUrl });
-      } catch (error) {
-        next(error);
-      }
-    });
-  });
+        if (err) {
+            return next(err)
+        }
+
+        const producto = await Producto.findById(request.params.id)
+
+        if (!producto) {
+            return response.status(404).json({ error: 'Producto not found' })
+        }
+
+        if (!files.portada) {
+            return response.status(400).json({ error: 'No file uploaded' })
+        }
+
+        const file = files.portada
+        const filePath = file[0].filepath // Path temporal donde formidable guarda el archivo
+        const fileName = `${Date.now()}_${producto.marca}${producto.modelo}`
+        const blob = bucket.file(`images/${fileName}`)
+
+        try {
+            await bucket.upload(filePath, {
+                destination: blob.name,
+                metadata: {
+                    contentType: file[0].mimetype,
+                    public: true,
+                },
+            })
+
+            await bucket.upload(filePath, {
+                destination: blob.name,
+                metadata: {
+                    contentType: file[0].mimetype,
+                },
+            })
+
+            // Configura los permisos de acceso público después de crear el archivo
+            await blob.makePublic()
+
+            const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`
+            // Aquí podrías guardar la URL en tu base de datos si lo necesitas
+            await Producto.findByIdAndUpdate(request.params.id, {
+                portada: publicUrl,
+            })
+            // await producto.save();
+            response.status(200).json({ url: publicUrl })
+        } catch (error) {
+            next(error)
+        }
+    })
+})
+
+productosRouter.put('/:id/change-imagenes', (request, response, next) => {
+    const form = new formidable.IncomingForm()
+    form.parse(request, async (err, fields, files) => {
+        if (err) {
+            return next(err)
+        }
+
+        const producto = await Producto.findById(request.params.id)
+
+        if (!producto) {
+            return response.status(404).json({ error: 'Producto not found' })
+        }
+
+        if (!files.imagenes) {
+            return response.status(400).json({ error: 'No file uploaded' })
+        }
+
+        const publicUrl = []
+
+        for (const imagen of files.imagenes) {
+            const file = files.portada
+            const filePath = imagen.filepath // Path temporal donde formidable guarda el archivo
+            const fileName = `${Date.now()}_${producto.marca}${producto.modelo}`
+            const blob = bucket.file(`images/${fileName}`)
+    
+            try {
+                await bucket.upload(filePath, {
+                    destination: blob.name,
+                    metadata: {
+                        contentType: imagen.mimetype,
+                        public: true,
+                    },
+                })
+    
+                await bucket.upload(filePath, {
+                    destination: blob.name,
+                    metadata: {
+                        contentType: imagen.mimetype,
+                    },
+                })
+    
+                await blob.makePublic()
+    
+                publicUrl.push(`https://storage.googleapis.com/${bucket.name}/${blob.name}`)
+    
+                
+                // await producto.save();
+            } catch (error) {
+                next(error)
+            }
+        }
+        response.status(200).json({ url: publicUrl })
+
+        try {
+            await Producto.findByIdAndUpdate(request.params.id, {
+                imagenes: publicUrl,
+            })
+        } catch (error) {
+            next(error)            
+        }
+
+
+    })
+})
 
 productosRouter.put('/:id/add-observacion', async (request, response, next) => {
     const body = request.body
@@ -570,13 +650,10 @@ productosRouter.put('/:id/add-observacion', async (request, response, next) => {
 
         const observacion = {
             observacion: body.observacion,
-            fecha: Date.now()
+            fecha: Date.now(),
         }
 
-
-    
-            producto.observaciones.push(observacion)
-
+        producto.observaciones.push(observacion)
 
         const updatedProducto = await Producto.findByIdAndUpdate(
             request.params.id,
@@ -604,15 +681,11 @@ productosRouter.put('/:id/change-state', async (request, response, next) => {
                 .json({ error: 'Estado must be provided' })
         }
 
-        if(body.estado === producto.estado_activo.estado)
-        {
-            return response
-                .status(400)
-                .json({ error: 'Estado already active' })
+        if (body.estado === producto.estado_activo.estado) {
+            return response.status(400).json({ error: 'Estado already active' })
         }
 
-        if (producto.estado_activo.estado === 'Disponible')
-        {
+        if (producto.estado_activo.estado === 'Disponible') {
             const CombosProducto = await Combo.distinct('_id', {
                 productos: request.params.id,
             })
@@ -622,7 +695,7 @@ productosRouter.put('/:id/change-state', async (request, response, next) => {
                     .status(400)
                     .json({ error: 'El producto se encuentra en un combo' })
             }
-        }   
+        }
 
         producto.log_estados.push({
             estado: body.estado_activo.estado,
@@ -794,7 +867,7 @@ productosRouter.delete(
                         .status(400)
                         .json({ error: 'El producto se encuentra en un combo' })
                 }
-                
+
                 await CaracteristicaXproducto.deleteMany({
                     producto: { $in: [request.params.id] },
                 })
