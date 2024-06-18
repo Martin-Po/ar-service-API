@@ -8,6 +8,7 @@ const Combo = require('../models/combo')
 const CaracteristicaXproducto = require('../models/caracteristicaXproducto')
 const multer = require('multer')
 const formidable = require('formidable')
+const ObjectId = require('mongoose').Types.ObjectId;
 
 const admin = require('firebase-admin')
 const serviceAccount = require('../firebaseServiceAccount')
@@ -29,17 +30,15 @@ const upload = multer({
 const middleware = require('../utils/middleware')
 const Caracteristica = require('../models/caracteristica')
 
+
+
 productosRouter.get('/', async (request, response) => {
     const productos = await Producto.find({})
-        .populate('moneda')
         .populate({
             path: 'caracteristicas',
-            populate: {
-                path: 'caracteristica',
-                model: 'Caracteristica',
-            },
+          
         })
-        .lean()
+        .populate('moneda')  
         .populate({
             path: 'tipos',
             select: 'name _id',
@@ -49,7 +48,37 @@ productosRouter.get('/', async (request, response) => {
             select: 'name _id',
         })
 
-    response.json(productos)
+        const caracteristicaXproducto = await CaracteristicaXproducto.find({}).populate('caracteristica')
+
+
+        const populatedProductos = productos.map(producto => {    
+            let caracteristicasFiltradas = caracteristicaXproducto.filter(caracteristica =>
+                caracteristica.producto.equals(new ObjectId(producto._id))
+              );
+          
+              // Crear un nuevo objeto con las propiedades necesarias
+              let productoConCaracteristicas = {
+                ...producto.toJSON(),  // Convertir el documento Mongoose a objeto JSON limpio
+                caracteristicas: caracteristicasFiltradas
+              };
+          
+              return productoConCaracteristicas;
+            // return {
+                
+
+            //     ...producto,
+            //     caracteristicas2: caracteristicaXproducto.filter(
+            //         caracteristica =>{
+            //            return (caracteristica.producto.equals(new ObjectId(producto._id)))}
+            //     ) 
+            // }     
+        });
+
+       
+
+
+
+    response.json(populatedProductos)
 })
 
 productosRouter.get('/marcas', async (request, response) => {
@@ -633,7 +662,7 @@ productosRouter.put('/:id/change-imagenes', (request, response, next) => {
     })
 })
 
-productosRouter.put('/:id/add-observacion', async (request, response, next) => {
+productosRouter.put('/:id/append-observacion', async (request, response, next) => {
     const body = request.body
     try {
         const producto = await Producto.findById(request.params.id)
@@ -659,6 +688,38 @@ productosRouter.put('/:id/add-observacion', async (request, response, next) => {
             request.params.id,
             producto,
             { new: true }
+        )
+        return response.json(updatedProducto.observaciones.slice(-1)[0])
+    } catch (exception) {
+        next(exception)
+    }
+})
+
+
+productosRouter.put('/:id/delete-observacion', async (request, response, next) => {
+    const body = request.body
+    try {
+        const producto = await Producto.findById(request.params.id)
+
+        if (!producto) {
+            return response.status(404).json({ error: 'Producto not found' })
+        }
+
+        if (!body.observacion_id) {
+            return response
+                .status(409)
+                .json({ error: 'Observacion must be provided' })
+        }
+
+
+
+        const updatedObservaciones = producto.observaciones.filter(observacion => {
+                            return observacion.id !== body.observacion_id
+                        })
+
+        const updatedProducto = await Producto.findByIdAndUpdate(
+            request.params.id,
+            { observaciones: updatedObservaciones }
         )
         return response.json(updatedProducto)
     } catch (exception) {
