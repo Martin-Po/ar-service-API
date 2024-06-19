@@ -4,6 +4,7 @@ const Caracteristica = require('../models/caracteristica')
 const middleware = require('../utils/middleware')
 const Caracteristicaxproducto = require('../models/caracteristicaXproducto')
 
+
 caracteristicasRouter.get('/', async (request, response) => {
     const caracteristicas = await Caracteristica.find({})
     response.json(caracteristicas)
@@ -79,9 +80,39 @@ caracteristicasRouter.delete(
     middleware.userExtractor,
     async (request, response, next) => {
         try {
+            const caracteristica = await Caracteristica.findById(request.params.id)
+
+            if (!caracteristica) {
+                
+                return response.status(404).json({ error: 'caracteristica  not found' })
+            }
+
+            const caracteristicasXproducto = await Caracteristicaxproducto.countDocuments({ caracteristica: request.params.id });
+
+            if (caracteristicasXproducto > 0) {
+                return response.status(400).json({ error: 'Se encontraron productos con esta caracteristica' });
+            }
+
+            await Caracteristica.findByIdAndDelete(request.params.id)
+
+            response.status(204).end()
+        } catch (exception) {
+            next(exception)
+        }
+
+
+    }
+)
+
+caracteristicasRouter.delete(
+    '/:id/hard-delete',
+    middleware.userExtractor,
+    async (request, response, next) => {
+        try {
             const caracteristica = await Caracteristica.findById(
                 request.params.id
             )
+            producto
 
             if (!caracteristica) {
                 return response
