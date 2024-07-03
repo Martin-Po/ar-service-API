@@ -14,21 +14,21 @@ const productoSchema = mongoose.Schema({
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Combo',
-            defautl: null,
+            default: null,
         },
     ],
     tipos: [
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Tipo',
-            defautl: null,
+            default: null,
         },
     ],
     subtipos: [
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Subtipo',
-            defautl: null,
+            default: null,
         },
     ],
     origen: {
@@ -39,7 +39,7 @@ const productoSchema = mongoose.Schema({
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Caracteristicaxproducto',
-            defautl: null,
+            default: null,
         },
     ],
     precio: {

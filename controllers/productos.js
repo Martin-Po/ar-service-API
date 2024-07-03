@@ -8,7 +8,7 @@ const Combo = require('../models/combo')
 const CaracteristicaXproducto = require('../models/caracteristicaXproducto')
 const multer = require('multer')
 const formidable = require('formidable')
-const ObjectId = require('mongoose').Types.ObjectId;
+const ObjectId = require('mongoose').Types.ObjectId
 
 const admin = require('firebase-admin')
 const serviceAccount = require('../firebaseServiceAccount')
@@ -30,15 +30,12 @@ const upload = multer({
 const middleware = require('../utils/middleware')
 const Caracteristica = require('../models/caracteristica')
 
-
-
 productosRouter.get('/', async (request, response) => {
     const productos = await Producto.find({})
         .populate({
             path: 'caracteristicas',
-          
         })
-        .populate('moneda')  
+        .populate('moneda')
         .populate({
             path: 'tipos',
             select: 'name _id',
@@ -48,35 +45,32 @@ productosRouter.get('/', async (request, response) => {
             select: 'name _id',
         })
 
-        const caracteristicaXproducto = await CaracteristicaXproducto.find({}).populate('caracteristica')
+    const caracteristicaXproducto = await CaracteristicaXproducto.find(
+        {}
+    ).populate('caracteristica')
 
-
-        const populatedProductos = productos.map(producto => {    
-            let caracteristicasFiltradas = caracteristicaXproducto.filter(caracteristica =>
+    const populatedProductos = productos.map((producto) => {
+        let caracteristicasFiltradas = caracteristicaXproducto.filter(
+            (caracteristica) =>
                 caracteristica.producto.equals(new ObjectId(producto._id))
-              );
-          
-              // Crear un nuevo objeto con las propiedades necesarias
-              let productoConCaracteristicas = {
-                ...producto.toJSON(),  // Convertir el documento Mongoose a objeto JSON limpio
-                caracteristicas: caracteristicasFiltradas
-              };
-          
-              return productoConCaracteristicas;
-            // return {
-                
+        )
 
-            //     ...producto,
-            //     caracteristicas2: caracteristicaXproducto.filter(
-            //         caracteristica =>{
-            //            return (caracteristica.producto.equals(new ObjectId(producto._id)))}
-            //     ) 
-            // }     
-        });
+        // Crear un nuevo objeto con las propiedades necesarias
+        let productoConCaracteristicas = {
+            ...producto.toJSON(), // Convertir el documento Mongoose a objeto JSON limpio
+            caracteristicas: caracteristicasFiltradas,
+        }
 
-       
+        return productoConCaracteristicas
+        // return {
 
-
+        //     ...producto,
+        //     caracteristicas2: caracteristicaXproducto.filter(
+        //         caracteristica =>{
+        //            return (caracteristica.producto.equals(new ObjectId(producto._id)))}
+        //     )
+        // }
+    })
 
     response.json(populatedProductos)
 })
@@ -246,15 +240,6 @@ productosRouter.post(
         }
         console.log(body.tipos)
 
-        for (const elemento of body.tipos) {
-            const tipo = await Tipo.findById(elemento)
-            if (!tipo) {
-                return response
-                    .status(404)
-                    .json({ error: 'Tipo ' + elemento + ' not found' })
-            }
-        }
-
         // Ahora puedes asignar tiposObjectIdArray al campo tipos en tu documento de Mongoose
 
         const producto = new Producto({
@@ -265,11 +250,24 @@ productosRouter.post(
             moneda: body.moneda,
             marca: body.marca,
             modelo: body.modelo,
+
             portada:
                 'https://firebasestorage.googleapis.com/v0/b/ar-service-f8abf.appspot.com/o/no-photo.jpg?alt=media&token=770977fc-e1c7-4802-8915-db2daca9afc2',
             imagenes:
                 'https://firebasestorage.googleapis.com/v0/b/ar-service-f8abf.appspot.com/o/no-photo.jpg?alt=media&token=770977fc-e1c7-4802-8915-db2daca9afc2',
         })
+
+        if (body.tipos) {
+            for (const elemento of body.tipos) {
+                const tipo = await Tipo.findById(elemento)
+                if (!tipo) {
+                    return response
+                        .status(404)
+                        .json({ error: 'Tipo ' + elemento + ' not found' })
+                }
+            }
+            producto.tipos = body.tipos
+        }
 
         if (body.subtipos) {
             for (const elemento of body.subtipos) {
@@ -621,7 +619,7 @@ productosRouter.put('/:id/change-imagenes', (request, response, next) => {
             const filePath = imagen.filepath // Path temporal donde formidable guarda el archivo
             const fileName = `${Date.now()}_${producto.marca}${producto.modelo}`
             const blob = bucket.file(`images/${fileName}`)
-    
+
             try {
                 await bucket.upload(filePath, {
                     destination: blob.name,
@@ -630,19 +628,20 @@ productosRouter.put('/:id/change-imagenes', (request, response, next) => {
                         public: true,
                     },
                 })
-    
+
                 await bucket.upload(filePath, {
                     destination: blob.name,
                     metadata: {
                         contentType: imagen.mimetype,
                     },
                 })
-    
+
                 await blob.makePublic()
-    
-                publicUrl.push(`https://storage.googleapis.com/${bucket.name}/${blob.name}`)
-    
-                
+
+                publicUrl.push(
+                    `https://storage.googleapis.com/${bucket.name}/${blob.name}`
+                )
+
                 // await producto.save();
             } catch (error) {
                 next(error)
@@ -655,77 +654,84 @@ productosRouter.put('/:id/change-imagenes', (request, response, next) => {
                 imagenes: publicUrl,
             })
         } catch (error) {
-            next(error)            
+            next(error)
         }
-
-
     })
 })
 
-productosRouter.put('/:id/append-observacion', async (request, response, next) => {
-    const body = request.body
-    try {
-        const producto = await Producto.findById(request.params.id)
+productosRouter.put(
+    '/:id/append-observacion',
+    async (request, response, next) => {
+        const body = request.body
+        try {
+            const producto = await Producto.findById(request.params.id)
 
-        if (!producto) {
-            return response.status(404).json({ error: 'Producto not found' })
+            if (!producto) {
+                return response
+                    .status(404)
+                    .json({ error: 'Producto not found' })
+            }
+
+            if (!body.observacion) {
+                return response
+                    .status(409)
+                    .json({ error: 'Observacion must be provided' })
+            }
+
+            const observacion = {
+                observacion: body.observacion,
+                fecha: Date.now(),
+            }
+
+            producto.observaciones.push(observacion)
+
+            const updatedProducto = await Producto.findByIdAndUpdate(
+                request.params.id,
+                producto,
+                { new: true }
+            )
+            return response.json(updatedProducto.observaciones.slice(-1)[0])
+        } catch (exception) {
+            next(exception)
         }
-
-        if (!body.observacion) {
-            return response
-                .status(409)
-                .json({ error: 'Observacion must be provided' })
-        }
-
-        const observacion = {
-            observacion: body.observacion,
-            fecha: Date.now(),
-        }
-
-        producto.observaciones.push(observacion)
-
-        const updatedProducto = await Producto.findByIdAndUpdate(
-            request.params.id,
-            producto,
-            { new: true }
-        )
-        return response.json(updatedProducto.observaciones.slice(-1)[0])
-    } catch (exception) {
-        next(exception)
     }
-})
+)
 
+productosRouter.put(
+    '/:id/delete-observacion',
+    async (request, response, next) => {
+        const body = request.body
+        try {
+            const producto = await Producto.findById(request.params.id)
 
-productosRouter.put('/:id/delete-observacion', async (request, response, next) => {
-    const body = request.body
-    try {
-        const producto = await Producto.findById(request.params.id)
+            if (!producto) {
+                return response
+                    .status(404)
+                    .json({ error: 'Producto not found' })
+            }
 
-        if (!producto) {
-            return response.status(404).json({ error: 'Producto not found' })
+            if (!body.observacion_id) {
+                return response
+                    .status(409)
+                    .json({ error: 'Observacion must be provided' })
+            }
+
+            const updatedObservaciones = producto.observaciones.filter(
+                (observacion) => {
+                    return observacion.id !== body.observacion_id
+                }
+            )
+
+            const updatedProducto = await Producto.findByIdAndUpdate(
+                request.params.id,
+                { observaciones: updatedObservaciones }
+            )
+            return response.json(updatedProducto)
+        } catch (exception) {
+            next(exception)
         }
-
-        if (!body.observacion_id) {
-            return response
-                .status(409)
-                .json({ error: 'Observacion must be provided' })
-        }
-
-
-
-        const updatedObservaciones = producto.observaciones.filter(observacion => {
-                            return observacion.id !== body.observacion_id
-                        })
-
-        const updatedProducto = await Producto.findByIdAndUpdate(
-            request.params.id,
-            { observaciones: updatedObservaciones }
-        )
-        return response.json(updatedProducto)
-    } catch (exception) {
-        next(exception)
     }
-})
+)
 
 productosRouter.put('/:id/change-state', async (request, response, next) => {
     const body = request.body

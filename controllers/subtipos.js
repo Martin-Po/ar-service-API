@@ -11,10 +11,7 @@ subtiposRouter.get('/', async (request, response) => {
     response.json(subtipo)
 })
 
-subtiposRouter.post(
-    '/',
-    middleware.userExtractor,
-    async (request, response, next) => {
+subtiposRouter.post('/', middleware.userExtractor, async (request, response, next) => {
         const body = request.body
         try {
             if (!body.name) {
@@ -22,13 +19,13 @@ subtiposRouter.post(
                     error: 'name missing',
                 })
             }
-            if (!body.tipoid) {
+            if (!body.tipo) {
                 return response.status(400).json({
                     error: 'tipo missing',
                 })
             }
 
-            const tipo = await Tipo.findById(body.tipoid)
+            const tipo = await Tipo.findById(body.tipo)
 
             if (!tipo) {
                 return response.status(404).json({ error: 'Tipo not found' })
@@ -88,7 +85,7 @@ subtiposRouter.put('/:id', async (request, response, next) => {
 subtiposRouter.put('/:id/add-tipo', async (request, response, next) => {
     const body = request.body
 
-    const tipoId = body.tipo
+    const tipoId = body.tipo.id
 
     try {
         const updatedtipo = await Tipo.findById(tipoId)
@@ -127,11 +124,11 @@ subtiposRouter.put('/:id/add-tipo', async (request, response, next) => {
 subtiposRouter.put('/:id/remove-tipo', async (request, response, next) => {
     const body = request.body
 
-    const tipoId = body.tipo
+    const tipoId = body.tipo.id
 
     try {
         const tipo = await Tipo.findById(tipoId)
-        const subtipo = await Subipo.findById(request.params.id)
+        const subtipo = await Subtipo.findById(request.params.id)
 
         //#region Integrity handling
         if (!tipo) {
@@ -141,7 +138,7 @@ subtiposRouter.put('/:id/remove-tipo', async (request, response, next) => {
         if (!subtipo) {
             return response.status(404).json({ error: 'Subtipo not found' })
         }
-        if (!subtipo.tipos.includes(tipoId._id)) {
+        if (!subtipo.tipos.includes(tipo._id)) {
             return response
                 .status(400)
                 .json({ error: 'Tipo doesnt exists in the subtipo' })
@@ -155,14 +152,14 @@ subtiposRouter.put('/:id/remove-tipo', async (request, response, next) => {
         }
 
         await Tipo.findByIdAndUpdate(
-            tipoId,
-            { $pull: { subtipos: subtipos.id } },
+            tipo._id,
+            { $pull: { subtipos: subtipo.id } },
             { new: true }
         )
 
         const updatedsubtipo = await Subtipo.findByIdAndUpdate(
             subtipo.id,
-            { $pull: { tipos: tipoId } },
+            { $pull: { tipos: tipo._id } },
             { new: true }
         )
 
@@ -172,10 +169,7 @@ subtiposRouter.put('/:id/remove-tipo', async (request, response, next) => {
     }
 })
 
-subtiposRouter.delete(
-    '/:id',
-    middleware.userExtractor,
-    async (request, response, next) => {
+subtiposRouter.delete('/:id', middleware.userExtractor, async (request, response, next) => {
         try {
             const subtipo = await Subtipo.findById(request.params.id)
 

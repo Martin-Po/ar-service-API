@@ -1,6 +1,10 @@
 const bcrypt = require('bcrypt')
 const monedasRouter = require('express').Router()
 const Moneda = require('../models/moneda')
+const Combo = require('../models/combo')
+const Producto = require('../models/producto')
+
+
 const middleware = require('../utils/middleware')
 
 monedasRouter.get('/', async (request, response) => {

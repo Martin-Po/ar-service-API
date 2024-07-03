@@ -4,6 +4,7 @@ const Tipo = require('../models/tipo')
 const Subtipo = require('../models/subtipo')
 
 const middleware = require('../utils/middleware')
+const Producto = require('../models/producto')
 
 tiposRouter.get('/', async (request, response) => {
     const tipo = await Tipo.find({}).populate({
@@ -71,7 +72,7 @@ tiposRouter.put('/:id', async (request, response, next) => {
 tiposRouter.put('/:id/add-subtipo', async (request, response, next) => {
     const body = request.body
 
-    const subtipoId = body.subtipo
+    const subtipoId = body.subtipo.id
 
     try {
         const updatedsubtipo = await Subtipo.findById(subtipoId)
@@ -110,7 +111,7 @@ tiposRouter.put('/:id/add-subtipo', async (request, response, next) => {
 tiposRouter.put('/:id/remove-subtipo', async (request, response, next) => {
     const body = request.body
 
-    const subtipoId = body.subtipo
+    const subtipoId = body.subtipo.id
 
     try {
         const subtipo = await Subtipo.findById(subtipoId)
@@ -132,7 +133,9 @@ tiposRouter.put('/:id/remove-subtipo', async (request, response, next) => {
         //#endregion Integrity handling
 
         if (subtipo.tipos.length === 1) {
-            // Eliminar subtipo y dependencias
+            return response
+                .status(400)
+                .json({ error: 'Subtipo tiene solo este tipo' })
         } else {
             await Subtipo.findByIdAndUpdate(
                 subtipoId,
@@ -145,9 +148,10 @@ tiposRouter.put('/:id/remove-subtipo', async (request, response, next) => {
                 { $pull: { subtipos: subtipoId } },
                 { new: true }
             )
+            response.status(201).json(updatedtipo)
         }
 
-        response.status(201).json(updatedtipo)
+
     } catch (exception) {
         next(exception)
     }
@@ -168,6 +172,17 @@ tiposRouter.delete(
 
             try {
 
+                const productosconTipo = await Producto.distinct(
+                    '_id', {tipos: request.params.id}
+                )
+                
+                console.log(productosconTipo);
+                if (productosconTipo.length > 0){
+                    return response
+                    .status(404)
+                    .json({ error: 'Existen productos con este tipo' })
+                }
+
                 const idsEliminados = await Subtipo.distinct(
                     '_id',
                     { tipos: request.params.id }
@@ -178,7 +193,7 @@ tiposRouter.delete(
                     if (subtipo.tipos.length === 1) {
                         return response
                     .status(404)
-                    .json({ error: 'Only tipo on subtipo ' + subtipo._id })
+                    .json({ error: 'Único tipo en subtipo ' + subtipo.name })
                     }
                 }
                 //Corroborar si es el único tipo
