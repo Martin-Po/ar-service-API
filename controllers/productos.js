@@ -765,8 +765,8 @@ productosRouter.put('/:id/change-state', async (request, response, next) => {
         }
 
         producto.log_estados.push({
-            estado: body.estado_activo.estado,
-            fecha: body.estado_activo.fecha,
+            estado: producto.estado_activo.estado,
+            fecha: producto.estado_activo.fecha,
         })
 
         producto.estado_activo = {

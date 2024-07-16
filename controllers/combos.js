@@ -9,7 +9,13 @@ const Moneda = require('../models/moneda')
 
 
 combosRouter.get('/', async (request, response) => {
-    const combos = await Combo.find({})
+    const combos = await Combo.find({}).populate({
+        path: 'moneda',
+        select: 'name _id', 
+      })
+      .populate({
+        path: 'productos',
+      })
     response.json(combos)
 })
 
@@ -59,26 +65,43 @@ combosRouter.post(
             })
         }
 
+
+        let comboProducts = []
+
         for (const elemento of body.productos) {
-            const producto = await Producto.findById(elemento)
+            const producto = await Producto.findById(elemento.id)
             if (!producto) {
                 return response
                     .status(404)
                     .json({ error: 'Producto ' + elemento + ' not found' })
             }
+            comboProducts.push(producto.id)
         }
 
         const combo = new Combo({
             name: body.name,
             descripcion: body.descripcion,
-            productos: body.productos,
+            productos: comboProducts,
             precio: body.precio,
-            moneda: body.moneda,
+            moneda: body.moneda.id,
         })
 
         try {
             const savedCombo = await combo.save()
-            response.status(201).json(savedCombo)
+            
+            await savedCombo.populate({
+                path: 'moneda',
+                select: 'name _id', 
+              })
+
+            const populatedCombo = await Combo.findById(savedCombo._id).populate({
+                path: 'moneda',
+                select: 'name _id', 
+              })
+              .populate({
+                path: 'productos',
+              })
+            response.status(201).json(populatedCombo)
         } catch (exception) {
             next(exception)
         }
@@ -199,13 +222,10 @@ combosRouter.put('/:id/change-discount', async (request, response, next) => {
     }
 })
 
-combosRouter.delete(
-    '/:id',
-    middleware.userExtractor,
-    async (request, response, next) => {
+combosRouter.delete('/:id', middleware.userExtractor, async (request, response, next) => {
         try {
             const combo = await Combo.findById(request.params.id)
-
+            console.log(combo);
             if (!combo) {
                 return response.status(404).json({ error: 'combo not found' })
             }
