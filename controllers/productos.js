@@ -75,6 +75,8 @@ productosRouter.get('/', async (request, response) => {
     response.json(populatedProductos)
 })
 
+
+
 productosRouter.get('/marcas', async (request, response) => {
     try {
         const marcas = await Producto.distinct('marca')
@@ -83,6 +85,17 @@ productosRouter.get('/marcas', async (request, response) => {
         response.status(500).json({ error: 'Internal server error' })
     }
 })
+
+productosRouter.get('/marcas-disponibles', async (request, response) => {
+    try {
+        const marcas = await Producto.distinct('marca', { 'estado_activo.estado': 'Disponible' })
+        response.json(marcas)
+    } catch (error) {
+        response.status(500).json({ error: 'Internal server error' })
+    }
+})
+
+
 
 productosRouter.get('/origenes', async (request, response) => {
     try {
